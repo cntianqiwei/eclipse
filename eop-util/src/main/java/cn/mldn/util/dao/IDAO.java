@@ -8,7 +8,7 @@ import java.util.Set;
  * 数据层操作的标准方法定义：增加、修改、删除、查询全部、根据ID查询、分页查询、模糊查询、数据统计
  * @author mldn
  * @param <K> 主键的类型
- * @param <V> VO的类型
+ * @param <V> VO的类型  vo
  */
 public interface IDAO<K, V> {
 	/**
