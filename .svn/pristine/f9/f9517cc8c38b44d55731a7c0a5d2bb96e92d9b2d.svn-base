@@ -1,0 +1,112 @@
+package cn.mldn.action;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import cn.mldn.service.IDeptService;
+import cn.mldn.service.IEmpService;
+import cn.mldn.service.ILevelService;
+import cn.mldn.util.bean.ResourceUtil;
+import cn.mldn.util.web.SplitPageUtil;
+import cn.mldn.util.web.action.AbstractAction;
+import cn.mldn.util.web.annotation.Autowired;
+import cn.mldn.util.web.annotation.Controller;
+import cn.mldn.util.web.annotation.RequestMapping;
+import cn.mldn.util.web.servlet.ModelAndView;
+import cn.mldn.util.web.servlet.ServletObjectUtil;
+import cn.mldn.vo.Dept;
+import cn.mldn.vo.Emp;
+import cn.mldn.vo.Level;
+
+@Controller
+@RequestMapping("/pages/back/admin/emp/*")
+public class EmpAction extends AbstractAction {
+	@Autowired
+	private IEmpService empService;
+	@Autowired
+	private IDeptService deptService;
+	@Autowired
+	private ILevelService levelService;
+	@RequestMapping("emp_add_pre")
+	public ModelAndView addPre() {
+		ModelAndView mav = new ModelAndView("/pages/back/admin/emp/emp_add.jsp");
+		Map<String,Object> map=null;
+		try {
+			map = this.empService.listPre();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		mav.add("allDepts", map.get("allDepts"));
+		mav.add("allLevels", map.get("allLevels"));
+		return mav;
+	} 
+	@RequestMapping("emp_edit_pre")
+	public String editPre(long empno) {
+		return "/pages/back/admin/emp/emp_edit.jsp";
+	} 
+	@RequestMapping("emp_edit")
+	public void edit(Emp vo) {
+		System.out.println("*** 验证通过，获取数据：" + vo);
+	}
+	@RequestMapping("emp_list")
+	public ModelAndView list() {
+		ModelAndView mav = new ModelAndView(ResourceUtil.getPage("cn.mldn.action.EmpAction.list.page")) ;
+		String columnData = "姓名:ename|简介:note" ;
+		String url = "cn.mldn.action.EmpAction.list.action" ;
+		SplitPageUtil spu = new SplitPageUtil(columnData, url);
+		System.out.println("当前页：" + spu.getCurrentPage() + "、每页显示行：" + spu.getLineSize());
+		Map<String,Object> all=null;
+		try {
+			all=this.empService.list(spu.getCurrentPage(), spu.getLineSize(), spu.getColumn(), spu.getKeyword());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		mav.addMap(all);
+		return mav ;
+	}
+
+	@RequestMapping("emp_add")
+	public String add(Emp emp) {
+		String photo=null;
+		if(ServletObjectUtil.getParameter().isUpload()) {
+			photo=(String)new ArrayList(ServletObjectUtil.getParameter().createUUIDFileName("photo")).get(0);
+			String realPath=ServletObjectUtil.getRequest().getRealPath("/");
+			System.out.println(realPath);
+			ServletObjectUtil.getParameter().saveUpload("photo", realPath+"upload/emp/"+photo);
+		}else {
+			photo="nophoto";
+		}
+		emp.setPhoto(photo);
+		emp.setStatus(0);
+		emp.setHiredate(new Date());
+		emp.setIneid(super.getMid());
+		Boolean flag=false;
+		try {
+			flag=this.empService.add(emp);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			ServletObjectUtil.getRequest().setAttribute("msg", "雇员增加失败！");
+			ServletObjectUtil.getRequest().setAttribute("url", "\"emp_list.action\"");
+			ServletObjectUtil.getRequest().setAttribute("urlClick", "\"/eop/pages/back/admin/dept/emp_list.action\"");
+			return "/pages/plugins/forward.jsp" ; 
+		}
+		if(flag) {
+			ServletObjectUtil.getRequest().setAttribute("msg", "雇员增加成功！");
+			ServletObjectUtil.getRequest().setAttribute("url", "\"emp_list.action\"");
+			ServletObjectUtil.getRequest().setAttribute("urlClick", "\"/eop/pages/back/admin/dept/emp_list.action\"");
+			return "/pages/plugins/forward.jsp" ; 
+		}else {
+			ServletObjectUtil.getRequest().setAttribute("msg", "雇员增加失败！");
+			ServletObjectUtil.getRequest().setAttribute("url", "\"emp_list.action\"");
+			ServletObjectUtil.getRequest().setAttribute("urlClick", "\"/eop/pages/back/admin/dept/emp_list.action\"");
+			return "/pages/plugins/forward.jsp" ; 
+		}
+//		ServletObjectUtil.getRequest().setAttribute("msg", "雇员信息增加成功！");s
+//		return ResourceUtil.getPage("forward.page");
+	}
+}
